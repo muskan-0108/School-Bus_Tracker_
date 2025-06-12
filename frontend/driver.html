@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Driver Location Update</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 400px;
+      margin: 20px auto;
+      padding: 10px;
+    }
+    .status {
+      margin-top: 10px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h1>Driver Location Update</h1>
+
+  <p>Current Latitude: <span id="latitude">--</span></p>
+  <p>Current Longitude: <span id="longitude">--</span></p>
+  <p class="status" id="status">Waiting for GPS permission...</p>
+
+  <script>
+    const busId = 1; // Change this if needed
+
+    const latEl = document.getElementById('latitude');
+    const lonEl = document.getElementById('longitude');
+    const statusEl = document.getElementById('status');
+
+    function sendLocation(lat, lon) {
+      fetch('http://localhost:3000/api/location', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          bus_id: busId,
+          latitude: lat,
+          longitude: lon
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        statusEl.textContent = 'Location sent at ' + new Date().toLocaleTimeString();
+      })
+      .catch(err => {
+        statusEl.textContent = 'Error sending location: ' + err.message;
+      });
+    }
+
+    function success(position) {
+      const lat = position.coords.latitude.toFixed(6);
+      const lon = position.coords.longitude.toFixed(6);
+      latEl.textContent = lat;
+      lonEl.textContent = lon;
+      sendLocation(lat, lon);
+    }
+
+    function error(err) {
+      statusEl.textContent = 'Error getting location: ' + err.message;
+    }
+
+    if ('geolocation' in navigator) {
+      statusEl.textContent = 'Requesting GPS permission...';
+
+      // Get initial position
+      navigator.geolocation.getCurrentPosition(success, error);
+
+      // Watch position and send updates every 5 seconds
+      setInterval(() => {
+        navigator.geolocation.getCurrentPosition(success, error);
+      }, 5000);
+
+    } else {
+      statusEl.textContent = 'Geolocation not supported by your browser.';
+    }
+  </script>
+</body>
+</html>
